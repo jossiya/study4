@@ -23,6 +23,7 @@ public class VolatileCountMain {
         volatile boolean flag = true;
         volatile long count;
 
+
         @Override
         public void run() {
             while (flag) {
