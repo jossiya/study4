@@ -36,7 +36,7 @@ public class BoundedQueueV5 implements BoundedQueue {
             }
             queue.offer(data);
             log("[put] 생산자 대이터 저장, producerCond.signal() 호출");
-            producerCond.signal();
+            consumerCond.signal();
         } finally{
             lock.unlock();
         }
@@ -44,6 +44,7 @@ public class BoundedQueueV5 implements BoundedQueue {
 
     @Override
     public String take() {
+        lock.lock();
         try{
             while (queue.isEmpty()) {
                 log("[take] 큐에 데이터가 없음, 소비자 대기");
@@ -56,7 +57,7 @@ public class BoundedQueueV5 implements BoundedQueue {
             }
             String data = queue.poll();
             log("[take] 소비자 데이터 획득, consumerCond.signal() 호출");
-            consumerCond.signal();
+            producerCond.signal();
             return data;
         }finally {
             lock.unlock();
@@ -69,7 +70,11 @@ public class BoundedQueueV5 implements BoundedQueue {
     }
 }
 
-// 생산자 쓰레드는 데이터를 생성하고, 대기중인 소비자 스레드에게 알려주어야 한다. 소비자 스레드는 데이터를 소비자고, 대기중인 생산자 스레드에게 알려주어야 한다.
-// 소비자 스레드는 데이터를 소비자고, 대기중인 생산자 스레드에게 알려주어야 한다. 하지만 스레드 대기 집합은 하나이고 이안에 생산자 스레드와 소비자 스레드가 함께 대기한다.
-// 그리고 notify()는 원하는 목표를 지정할 수 없었다. 물론 notifyAll()을 사용할 수 있지만, 원하지 않는 모든 스레드가 함께 대기한다. 그리고 notify()는 원하는 목표를 자정할 수 없었다. notifyAll()을
-// 사용할 수 있지만, 원하지 않는 모든 쓰레드까지 모두 깨어난다.
+// Object.notify()
+// 대기 중인 스레드 중 임의의 하나를 선택해서 꺄운다. 스레드가 꺠어나는 순서는 정의되어 있지 않으며, JVM 구현에 따라 다르다. 보통은 먼저 들어온 스레드가 먼저 수행되지만 구현에 따라 다르다.
+// 보텅은 먼저 들어온 스레드가 먼저 수행되지만 구현에 따라 다를 수 있다.
+// synchronized 블록 내에서 모니터 락을 가지고 있는 스레드가 호출해야 한다.
+
+// Condition.signal()
+// 대기 중인 스레드 중 하나를 깨우며, 일반적으로 FIFO 순서로 깨운다. 이 부분은 자바 버전과 구현에 따라 딸라질 수 있지만, 보통 Condition의 구현은 Queue 구조를 사용하기 떄문에 FIFO 순서로 꺠운다.
+// ReentrantLock을 가지고 있는 쓰레드가 호출해야 한다.
