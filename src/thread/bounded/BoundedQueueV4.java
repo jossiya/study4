@@ -55,9 +55,10 @@ public class BoundedQueueV4 implements BoundedQueue {
             }
             String data = queue.poll();
             log("[take] 소비자 데이터 획득, notify() 호출");
+            condition.signal();
             return data;
         }finally {
-            condition.signal();
+            lock.unlock();
         }
     }
 
